@@ -1,20 +1,4 @@
-/*
-*封装说明:
-*	mTween接受一个初始化的对象{};
-*       参数必选：
-*			el： 目标元素
-*			target： {}目标点
-*			time：持续时间ms
-*			type： 运动形式
-*		参数可选：
-*			callBack
-*			callIn
-*		Tween参数说明：
-* 			t: current time（当前时间）；
-* 			b: beginning value（初始值）；
-* 			c: change in value（变化量）；
-* 			d: duration（持续时间）。
-*/
+/*运动*/
 var Tween = {
 	linear: function (t, b, c, d){
 		return c*t/d + b;
@@ -164,6 +148,7 @@ function cssTransform(el, attr, val) {
 		}
 		return el.transform[attr];
 	} else {
+		//设置
 		var transformVal = "";
 		el.transform[attr] = Number(val);
 		for(var s in el.transform){
