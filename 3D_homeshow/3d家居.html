@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width,maximum-scale=1,minimum-scale=1,initial-scale=1,user-scalable=no" />
+        <title>Document</title>
+        <style type="text/css">
+			body {
+				margin: 0;
+			}
+			body,
+			html {
+				height: 100%;
+			}
+			#box {
+				width: 100%;
+				height: 100%;
+				-webkit-perspective: 300px;
+				perspective: 300px;
+				overflow: hidden;
+			}	
+			#z {
+				position: absolute;
+				left: 0;
+				right: 0;
+				top: 0;
+				bottom: 0;
+				-webkit-transform-style: preserve-3d;
+				transform-style: preserve-3d;
+				/*-webkit-transform: translateZ(200px);
+				transform: translateZ(200px);*/
+			}
+			#div  {
+				position: absolute;
+				left: 50%;
+				top: 50%;
+				margin: -512px 0 0 -512px;
+				width: 1024px;
+				height: 1024px;
+				-webkit-transform-style: preserve-3d;
+				transform-style: preserve-3d;
+				-webkit-transform: rotateY(0deg);
+				transform: rotateY(0deg);
+			}
+			#div span {
+				position: absolute;
+				left: 0;
+				top: 0;
+				width: 100%;
+				height: 100%;
+				-webkit-backface-visibility: hidden;
+				backface-visibility: hidden;
+			}
+			#div span:nth-of-type(1){
+				background: url(img/neg-x.png) no-repeat;
+				background-size: 100% 100%;
+				/*-webkit-transform: rotateY(0deg) translateZ(-512px);
+				transform: rotateY(0deg) translateZ(-512px);*/
+			}
+			#div span:nth-of-type(2){
+				background: url(img/pos-z.png) no-repeat;
+				background-size: 100% 100%;
+				/*-webkit-transform: rotateY(-90deg) translateZ(-512px);
+				transform: rotateY(-90deg) translateZ(-512px);*/
+			}
+			#div span:nth-of-type(3){
+				background: url(img/pos-x.png) no-repeat;
+				background-size: 100% 100%;
+				/*-webkit-transform: rotateY(-180deg) translateZ(-512px);
+				transform: rotateY(-180deg) translateZ(-512px);*/
+			}
+			#div span:nth-of-type(4){
+				background: url(img/neg-z.png) no-repeat;
+				background-size: 100% 100%;
+				/*-webkit-transform: rotateY(-270deg) translateZ(-512px);
+				transform: rotateY(-270deg) translateZ(-512px);*/
+			}
+			#div span:nth-of-type(5){
+				background: url(img/pos-y.png) no-repeat;
+				background-size: 100% 100%;
+				/*-webkit-transform: rotateX(-90deg) translateZ(-512px);
+				transform: rotateX(-90deg) translateZ(-512px);*/
+			}
+			#div span:nth-of-type(6){
+				background: url(img/neg-y.png) no-repeat;
+				background-size: 100% 100%;
+				/*-webkit-transform: rotateX(90deg) translateZ(-512px);
+				transform: rotateX(90deg) translateZ(-512px);*/
+			}
+        </style>
+        
+    </head>
+    <body>
+        <div id="box">
+            <div id="z">
+                <div id="div">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </div>
+        <script src="MoveTween.js"></script>
+        <script type="text/javascript">
+			document.addEventListener(
+				'touchstart', 
+				function(ev){
+					ev.preventDefault();
+				},
+				{
+					passive: false
+				}
+			);
+			var box = document.querySelector('#box');
+			var zBox = document.querySelector('#z');
+            var div = document.querySelector('#div');
+			var spans = document.querySelectorAll('#div span');
+			
+			css( zBox, "translateZ", 300 );
+			css( div, "rotateX", 0 );
+			css( div, "rotateY", 0 );
+			css( spans[4], 'rotateX', -90 );
+			css( spans[5], 'rotateX', 90 );
+			for( var i = 0; i < spans.length; i++ ){
+				if(i<4){
+					css( spans[i], 'rotateY', i*(-90) )	
+				}
+				css(spans[i],"translateZ", -510);//-512会有白色间隙;
+			}
+			//滑动视角的切换，并添加缓冲运动效果
+			/*
+			*缓冲效果难点：释放时的速度决定缓冲距离;
+			*/
+			var startPoint = { x: 0, y: 0 };//记录初始点的位置
+			var startDeg = { x: 0, y: 0 };//初始角度
+			var last = { x: 0, y: 0 }; //记录上一次移动距离
+			var lastDis =  { x :0,y: 0 };//差值
+			var lastTime = 0;
+			var lastTimeDis = 0;
+			var perDeg = 1024/90;
+			var isMoving = false;
+			
+				box.addEventListener(
+					'touchstart',
+					function(ev){
+						startPoint.x = ev.changedTouches[0].pageX;
+						startPoint.y = ev.changedTouches[0].pageY;
+						startDeg.x = css(div, 'rotateY');
+						startDeg.y = css(div, 'rotateX');
+						//手指按下的时候上一个点的坐标，两点差值 时差
+						last.x = startPoint.x;
+						last.y = startPoint.y;
+						lastDis.x = 0;
+						lastDis.y = 0;
+						lastTimeDis = 0;
+						lastTime = new Date().getTime();
+					}
+
+				);
+				box.addEventListener(
+					'touchmove',
+					function(ev){		
+						var dis = {};//存放改变的坐标差
+						var nowTime = new Date().getTime();//获取现在时间
+						dis.x = ev.changedTouches[0].pageX - startPoint.x;
+						dis.y = ev.changedTouches[0].pageY - startPoint.y;
+						//console.log(startDeg.x - dis.x)
+						var degX = startDeg.x - dis.x/perDeg;
+						var degY = startDeg.y + dis.y/perDeg;
+						//禁止上下翻转角度过大;
+						if( degY > 45 ){
+							degY = 45;
+						}else if( degY <-45 ){
+							degY = -45;
+						}
+						css( div, 'rotateY', degX );
+						css( div, 'rotateX', degY );
+						lastDis.x = (startPoint.x + dis.x) - last.x;
+						lastDis.y = (startPoint.y + dis.y) - last.y;//这一次的位置与上一次的位置
+						last.x = startPoint.x + dis.x;//重新为上一次赋值;
+						last.y = startPoint.y + dis.y;
+						lastTimeDis = nowTime - lastTime;//时间差
+						lastTime = nowTime;//时间的变化
+					}
+				);
+				box.addEventListener(
+					'touchend',
+					function(ev){
+						//释放时速度的计算
+						var speedX =  lastDis.x / lastTimeDis;
+						var speedY =  lastDis.y / lastTimeDis;
+						/*如果未发生move，那么时间差值0，会出现NaN*/
+						console.log( speedX,speedY )
+						//释放时缓冲距离
+						var disX = parseInt(speedX * 20);
+						var disY = parseInt(speedY * 20);
+						console.log( disX,disY )
+						//进行NaN的处理;
+						disX = isNaN(disX)?0:disX;
+						disY = isNaN(disY)?0:disY;
+						//计算目标点
+						var targetX = css(div,"rotateY") - disX;
+						var targetY = css(div,"rotateX") + disY;
+						console.log( targetX,targetY )
+						if(targetY > 45){
+							targetY = 45;
+						} else if(targetY < -45){  
+							targetY = -45;
+						}
+						/*
+						MTween({
+								el: div,
+								target: {rotateX:targetY, rotateY: targetX},
+								type: "easeOutStrong",
+								time: Math.abs(parseInt(disY))*5
+								
+							});
+						*/
+						if( Math.abs(disX) > Math.abs(disY) ){
+							MTween({
+								el: div,
+								target: { rotateY: targetX },
+								type: "easeOutStrong",
+								time: Math.abs( parseInt(disX) )*5
+								
+							});
+						}else{
+							MTween({
+								el: div,
+								target: { rotateX: targetY },
+								type: "easeOutStrong",
+								time: Math.abs( parseInt(disY) )*5
+								
+							});
+						}
+					}
+				);
+        </script>
+    </body>
+</html>
